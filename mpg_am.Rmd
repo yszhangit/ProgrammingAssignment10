@@ -3,9 +3,9 @@ title: "Peer graded assignment regression models"
 author: "yinshu zhang"
 date: "October 24, 2018"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -50,21 +50,24 @@ library(ggplot2)
 ```
 
 # Relatinoship between MPG and AM
-```{r mpgamplot}
+```{r correlation}
+cor.am <- round(cor(mtcars$mpg, mtcars$am),4)
 ```
-## covariaint
-## MPG ANOVA test against AM
-To answer first question, is automatic or manula transmission better or worse for MPG. We will use null hyposis that MPG is the same between auto and manual. The practical expliation of Ho is 
+## ANOVA test
+From summary figure, we can see the MPG and AM variables has `r cor.am` correlation value, it a indication MPG and AM has relationship, but not strong enough. Therefore, to answer first question, is automatic or manula transmission better or worse for MPG. We will use one-way analysis of variance.
 
-1, those two samples, one with auto transmission, one with manual, are from **same** population.
+the null hypothesis of ANOVA is designed as MPG is the same between auto and manual transmission cars. The practical expliation of Ho is 
 
-2, or if two sample show difference, it is likely due to chance.
+1, those two samples, one with auto transmission, one with manual, are from either same population or populations with same mean.
+
+2, or when two sample show difference, it is likely due to chance.
 
 ```{r anova}
 anova1 <- aov(mpg ~ am, data = mtcars)
 summary(anova1)
+f_crit <- round(qf(.95, 2, 30),2)
 ```
-p value of 0.000285 is signifciently less than the common 95% confident level critical value, the result shows strong evident rejecting null hyposis, in another word, auto or manual transmission does related to fuel comsumption.
+F value of 16.86 is signifciently larger than the 95% significance level critical value `r f_crit`, the result shows strong evident rejecting null hyposis, in another word, auto or manual transmission cars like have different MPG.
 
 # Regression
 ## seletion of dependent variables

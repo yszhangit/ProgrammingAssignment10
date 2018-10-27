@@ -25,6 +25,7 @@ abline(mod1)
 # ANOVA
 anova1 <- aov(mpg~am, data = mtcars)
 summary(anova1)
+f_crit <- round(qf(.95, 2, 30),2)
 
 ## qqplot
 library(ggplot2)
