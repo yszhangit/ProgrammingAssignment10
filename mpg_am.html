@@ -143,7 +143,6 @@ $(document).ready(function () {
 </div>
 <div id="data-exploration" class="section level1">
 <h1>Data Exploration</h1>
-<pre class="r"><code>dim.mtcars &lt;- dim(mtcars)</code></pre>
 <p>We will use “mtcars” data to draw conclusions, mtcars is a 32 by 11 data frame, with columns defined as:</p>
 <table>
 <thead>
@@ -200,17 +199,30 @@ $(document).ready(function () {
 </tbody>
 </table>
 <p>A quick look at each variables</p>
-<pre><code>## Loading required package: ggplot2</code></pre>
 </div>
 <div id="relatinoship-between-mpg-and-am" class="section level1">
 <h1>Relatinoship between MPG and AM</h1>
-<pre class="r"><code>cor.am &lt;- round(cor(mtcars$mpg, mtcars$am),4)</code></pre>
-<div id="anova-test" class="section level2">
-<h2>ANOVA test</h2>
-<p>From summary figure, we can see the MPG and AM variables has 0.5998 correlation value, it a indication MPG and AM has relationship, but not strong enough. Therefore, to answer first question, is automatic or manula transmission better or worse for MPG. We will use one-way analysis of variance.</p>
-<p>the null hypothesis of ANOVA is designed as MPG is the same between auto and manual transmission cars. The practical expliation of Ho is</p>
-<p>1, those two samples, one with auto transmission, one with manual, are from either same population or populations with same mean.</p>
-<p>2, or when two sample show difference, it is likely due to chance.</p>
+<div id="correlation-test" class="section level2">
+<h2>Correlation test</h2>
+<p>From summary figure, we can see the MPG and AM variables has 0.5998 correlation value, it a indication MPG and AM has relationship, but not strong enough. Therefore, to answer first question, we need better evidents.</p>
+<p>We will test the correlation betwen MPG and AM with alternative hypothesis “true correlation is greater than zero”</p>
+<pre class="r"><code>cor.test(mtcars$mpg, mtcars$am, alternative = &quot;greater&quot;)</code></pre>
+<pre><code>## 
+##  Pearson's product-moment correlation
+## 
+## data:  mtcars$mpg and mtcars$am
+## t = 4.1061, df = 30, p-value = 0.0001425
+## alternative hypothesis: true correlation is greater than 0
+## 95 percent confidence interval:
+##  0.3691544 1.0000000
+## sample estimates:
+##       cor 
+## 0.5998324</code></pre>
+<p>From the output, p-value is significiant at 95% confidence interval, this is a good evident proving MPG and AM are correlated.</p>
+</div>
+<div id="one-way-anova-test" class="section level2">
+<h2>One way ANOVA test</h2>
+<p>To further prove the opposite is false, we can use one-way ANOVA. The null hypothesis of ANOVA is designed as the mean MPG are the same between auto and manual transmission cars, ie. either those two samples are from either same population or populations with same mean, or when two sample show difference, it is likely due to chance.</p>
 <pre class="r"><code>anova1 &lt;- aov(mpg ~ am, data = mtcars)
 summary(anova1)</code></pre>
 <pre><code>##             Df Sum Sq Mean Sq F value   Pr(&gt;F)    
@@ -218,17 +230,71 @@ summary(anova1)</code></pre>
 ## Residuals   30  720.9    24.0                     
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
-<pre class="r"><code>f_crit &lt;- round(qf(.95, 2, 30),2)</code></pre>
-<p>p value of 0.000285 is signifciently less than the 95% significance level critical value 3.32, the result shows strong evident rejecting null hyposis, in another word, auto or manual transmission cars like have different MPG.</p>
+<pre class="r"><code>f_crit &lt;- round(qf(.95, 1, 30),2)</code></pre>
+<p>F value of 16.86 is significiantly larger than the 95% confidence interval critical value 4.17, the result shows strong evident <em>rejecting</em> null hypophsis.</p>
 </div>
 </div>
 <div id="regression" class="section level1">
 <h1>Regression</h1>
-<div id="seletion-of-dependent-variables" class="section level2">
-<h2>seletion of dependent variables</h2>
+<div id="simple-regression" class="section level2">
+<h2>simple regression</h2>
+<p>For the sake of comparsion, let’s do a single variable(factor actually) linear model.</p>
+<pre class="r"><code>mod.sim &lt;- lm(mpg ~ am, data = mtcars)
+summary(mod.sim)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = mpg ~ am, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -9.3923 -3.0923 -0.2974  3.2439  9.5077 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   17.147      1.125  15.247 1.13e-15 ***
+## am             7.245      1.764   4.106 0.000285 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 4.902 on 30 degrees of freedom
+## Multiple R-squared:  0.3598, Adjusted R-squared:  0.3385 
+## F-statistic: 16.86 on 1 and 30 DF,  p-value: 0.000285</code></pre>
+<p>To interpurte the output, the coefficient of AM is 7.245, which means changing from auto to manual, will result on average 7.245 mile/gallon fuel consumption increase. However, as expected, the model quality is low, we can use it to predict the MPG, when only around 36% of residuals varians are explained by this model, AM is a dummy vailable after all.</p>
 </div>
-<div id="with-dummy-variable-of-am" class="section level2">
-<h2>with dummy variable of AM</h2>
+<div id="seletion-of-independent-variables" class="section level2">
+<h2>seletion of independent variables</h2>
+<p>To make a multi-variable liner regression model, there are ten variables to choose from. we need to aviod chose highly correlated variables, take a quick look at first summary plot, we can see quite some variables are highly related.</p>
+<p>This is not a big surprise, with basic car knowlege we can understand why some of independent variables are correlated. For example, more cyclder of an engine normally means bigger displacement, higher the hourse power normally results lower quater mile time.</p>
+<p>We can categorize those ten variables into following group</p>
+<p>1, drive train specs: cyl, disp, drat, vs, carb, drat, am, gear</p>
+<p>2, other veichle specs: wt</p>
+<p>3, performance measurements: qsec, hp</p>
+<p>we can chose manually and compare the result for each but better option is get help from package “leaps”.</p>
+<embed src="data:application/pdf;base64,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" width="768" type="application/pdf"></embed>
+<p>Here we did a exhausded subset comparsion, with one best result from each number of variable combination. from the right plot, we can see the adjusted R squre does not show big difference after 0.7, the mallow’s Cp however have one very low value compares to other combinations. this is a good candidate that cover high variation and keep low bias.</p>
+<p>here’s regression model with dependent variables of weight, quarter mile time, and auto/manual transmission.</p>
+<pre class="r"><code>mod.mul &lt;- lm(mpg ~ wt + qsec + am, data = mtcars)
+summary(mod.mul)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = mpg ~ wt + qsec + am, data = mtcars)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -3.4811 -1.5555 -0.7257  1.4110  4.6610 
+## 
+## Coefficients:
+##             Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)   9.6178     6.9596   1.382 0.177915    
+## wt           -3.9165     0.7112  -5.507 6.95e-06 ***
+## qsec          1.2259     0.2887   4.247 0.000216 ***
+## am            2.9358     1.4109   2.081 0.046716 *  
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 2.459 on 28 degrees of freedom
+## Multiple R-squared:  0.8497, Adjusted R-squared:  0.8336 
+## F-statistic: 52.75 on 3 and 28 DF,  p-value: 1.21e-11</code></pre>
 </div>
 </div>
 <div id="executive-summary" class="section level1">

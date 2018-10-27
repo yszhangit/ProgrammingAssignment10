@@ -3,15 +3,21 @@ title: "Peer graded assignment regression models"
 author: "yinshu zhang"
 date: "October 24, 2018"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
+library(GGally)
+library(ggplot2)
+library(leaps)
+attach(mtcars)
 knitr::opts_chunk$set(echo = TRUE)
 opts_chunk$set(dev = 'pdf')
+dim.mtcars <- dim(mtcars)
+cor.am <- round(cor(mpg, am),4)
 ```
 
 # Introduction
@@ -22,9 +28,6 @@ This study if conducted by Motor Trend magazine to explore the relationship betw
 > "Quantify the MPG difference between automatic and manual transmissions"
 
 # Data Exploration
-```{r dataexp}
-dim.mtcars <- dim(mtcars)
-```
 We will use "mtcars" data to draw conclusions, mtcars is a `r dim.mtcars[1]` by `r dim.mtcars[2]` data frame, with columns defined as:
 
 column name | defination
@@ -44,33 +47,66 @@ carb  | Number of carburetors
 A quick look at each variables
 
 ```{r sumplot, echo=FALSE, fig.width=12, fig.height=8}
-library(GGally)
-library(ggplot2)
 #ggpairs(mtcars)
 ```
 
 # Relatinoship between MPG and AM
-```{r correlation}
-cor.am <- round(cor(mtcars$mpg, mtcars$am),4)
+## Correlation test
+From summary figure, we can see the MPG and AM variables has `r cor.am` correlation value, it a indication MPG and AM has relationship, but not strong enough. Therefore, to answer first question, we need better evidences.
+
+We will test the correlation betwen MPG and AM with alternative hypothesis "true correlation is greater than zero"
+```{r cortest}
+cor.test(mpg, am, alternative = "greater")
 ```
-## ANOVA test
-From summary figure, we can see the MPG and AM variables has `r cor.am` correlation value, it a indication MPG and AM has relationship, but not strong enough. Therefore, to answer first question, is automatic or manula transmission better or worse for MPG. We will use one-way analysis of variance.
+From the output, p-value is significiantly away from 95% confidence interval, this is a good evidence *supporting* MPG and AM are correlated.
 
-the null hypothesis of ANOVA is designed as MPG is the same between auto and manual transmission cars. The practical expliation of Ho is 
-
-1, those two samples, one with auto transmission, one with manual, are from either same population or populations with same mean.
-
-2, or when two sample show difference, it is likely due to chance.
+## One way ANOVA test
+To further prove the opposite is false, we can use one-way ANOVA. The null hypothesis of ANOVA is designed as the mean MPG are the same between auto and manual transmission cars, ie. either those two samples are from either from same population(or different populations with same mean), or when two sample show difference, it is due to chance.
 
 ```{r anova}
 anova1 <- aov(mpg ~ am, data = mtcars)
 summary(anova1)
-f_crit <- round(qf(.95, 2, 30),2)
+f_crit <- round(qf(.95, 1, 30),2)
 ```
-F value of 16.86 is signifciently larger than the 95% significance level critical value `r f_crit`, the result shows strong evident rejecting null hyposis, in another word, auto or manual transmission cars like have different MPG.
+F value of 16.86 is significiantly larger than the 95% confidence interval critical value `r f_crit`, the result shows strong evident *rejecting* null hypophsis.
 
 # Regression
-## seletion of dependent variables
-## with dummy variable of AM
+## simple regression
+For the sake of comparsion, let's do a single variable(factor actually) linear model.
+```{r reg.sim}
+mod.sim <- lm(mpg ~ am, data = mtcars)
+summary(mod.sim)
+```
+To interpurte the output, the coefficient of AM is 7.245, which means changing from auto to manual, will result on average 7.245 mile/gallon fuel consumption increase. However, as expected, the model quality is low, we can't use it to predict the MPG, when only around 36% of residuals varians are explained by this model, AM is a dummy vailable after all.
+
+## seletion of independent variables
+To make a multi-variable liner regression model, there are ten variables to choose from. we need to aviod chose highly correlated variables, take a quick look at first summary plot, we can see quite some variables are highly related.
+
+This is not a big surprise, with basic car knowlege we can understand why some of independent variables are correlated. For example, more cyclder of an engine normally means bigger displacement, higher the hourse power normally results lower quater mile time. 
+
+We can categorize those ten variables into following group
+
+1, drive train specs: cyl, disp, drat, vs, carb, drat, am, gear
+
+2, other veichle specs: wt
+
+3, performance measurements: qsec, hp
+
+we can chose ourselvies and compare the results but better option is to get help from package "leaps".
+
+```{r subset, echo = F, fig.width = 8, fig.height= 4}
+regfit.full <- regsubsets(mpg ~ ., data = mtcars, nbest = 1)
+par(mfrow=c(1,2))
+plot(regfit.full, scale = "adjr2", main="Adj R sqr")
+plot(regfit.full, scale = "Cp", main="mallow's Cp")
+```
+Here we did a exhausded subset comparsion, with one best result from each number of variable combination. from the right plot, we can see the adjusted R squre does not show big difference after 0.7, the mallow's Cp however have one very low value compares to other combinations. Therefore, we will create regression model with independent variables of weight, quarter mile time, and auto/manual transmission.
+```{r multireg, echo=F, fig.width= 6, fig.height=6}
+mod.mul <- lm(mpg ~ wt + qsec + am, data = mtcars)
+summary(mod.mul)
+library(plot3D)
+amf <- factor(am, levels = c(1,0), labels = c('manual','auto'))
+scatter3D(wt,qsec,mpg, col = amf, colkey=F)
+```
 
 # Executive Summary
