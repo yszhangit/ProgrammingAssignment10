@@ -1,0 +1,12 @@
+column name , defination , effect on higher value , variable category
+mpg , miles per gallon(US) , , outcome
+cyl , number of cylinders , high power output , engine specs
+disp , engine displacement(cu. in.) , high power output , engine specs
+hp , Gross horsepower , high fuel consumption , drivetrain specs 
+drat , Rear axle ratio , faster acceleration , drivetrain specs
+wt , Weight (1000 lbs) , slower acceleration , vehicle specs
+qsec , zero to 1/4 mile time in seconds , slower acceleration , performance measurement
+vs ," Engine shape (0 = V-shaped, 1 = straight) ", factor , drivetrain specs
+am ," Transmission (0 = automatic, 1 = manual) ", factor , drivetrain specs
+gear , Number of forward gears , faster acceleration , drivetrain specs
+carb , Number of carburetors , high power output , engine specs

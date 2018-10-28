@@ -11,6 +11,10 @@
 library(ggplot2)
 # ggplot2 has mpg 
 attach(mtcars)
+
+
+
+
 mod.sim <- lm(mpg ~ am, data = mtcars)
 mod.mul <- lm(mpg ~ wt + qsec + am, data = mtcars)
 summary(mod.sim)
