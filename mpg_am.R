@@ -86,18 +86,16 @@ ggplot(data = mtcars, aes(x=wt, y=mpg)) + geom_point(size =3, alpha =0.5, aes(co
 
 # comprae residual
 se <- function(x) sqrt(var(x)/length(x))
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 res.range <- ceiling(max(sapply(list(mod.sim$residuals, mod.mul$residuals), range)))
-
-plot(mod.sim$residuals, ylim = res.range * c(1,-1))
-abline(h=se(mod.sim$residuals) * c(1,-1))
+plot(mod.sim$residuals, ylim = res.range * c(1,-1), main="simple", ylab = "variation")
 abline(h=0)
-plot(mod.mul$residuals, ylim = res.range * c(1,-1))
-abline(h=se(mod.mul$residuals) * c(1,-1))
+plot(mod.mul$residuals, ylim = res.range * c(1,-1), main="multi", ylab = "variation")
 abline(h=0)
-
+hist(mod.sim$residuals, breaks = 30, main="simple", xlab = "variation")
+hist(mod.mul$residuals, breaks = 30, main="multi", xlab = "variation")
+mtext("figure 4, residuals", side = 1, outer = T, line = -3)
 par(mfrow=c(1,1))
-
 
 # 3D plot
 library(plot3D)
@@ -116,14 +114,14 @@ z.auto.pred <- matrix(
   predict(mod.mul, newdata = data.frame(
     wt = xy$x,
     qsec = xy$y,
-    am=1)), 
+    am=0)), 
   nrow =grid.lines, ncol = grid.lines
   )
 z.manual.pred <- matrix(
   predict(mod.mul, newdata = data.frame(
     wt = xy$x,
     qsec = xy$y,
-    am=0)), 
+    am=1)), 
   nrow =grid.lines, ncol = grid.lines
   )
 # droplines to surface
@@ -134,11 +132,11 @@ points.auto <- mtcars[mtcars$am == 0,]
 points.manual <- mtcars[mtcars$am == 1,]
 
 scatter3D(points.auto$wt, points.auto$qsec, points.auto$mpg, 
-          zlim = c(0,40),
+          ylim = c(10,30), zlim = c(0,45),
           col = "blue",
           colkey=F, pch=20, cex=2, alpha = 0.5,
-          phi = -5, theta = 10, 
-          bty = "g", 
+          phi = -5, theta = 40, 
+          bty = "g", ticktype = "detailed",
           xlab ="wt", ylab="qsec",zlab="mpg",
           surf = list(x = x.pred, y = y.pred, z=z.auto.pred, facets = NA , col = "blue"),
           main = "MPG with auto(blue) and manual(red)"
