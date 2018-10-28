@@ -4,8 +4,6 @@ author: "yinshu zhang"
 date: "October 24, 2018"
 output:
   pdf_document: default
-  html_document:
-    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +11,8 @@ library(knitr)
 library(GGally)
 library(ggplot2)
 library(leaps)
+library(plot3D)
+
 attach(mtcars)
 knitr::opts_chunk$set(echo = TRUE)
 opts_chunk$set(dev = 'pdf')
@@ -24,8 +24,10 @@ cor.am <- round(cor(mpg, am),4)
 This study if conducted by Motor Trend magazine to explore the relationship between a set of variables and the fuel consumption. The focus of this paper is to address two questions.
 
 > "Is an automatic or manual transmission better for MPG"
-
 > "Quantify the MPG difference between automatic and manual transmissions"
+
+# Summary
+
 
 # Data Exploration
 We will use "mtcars" data to draw conclusions, mtcars is a `r dim.mtcars[1]` by `r dim.mtcars[2]` data frame, with columns defined as:
@@ -46,7 +48,7 @@ carb  | Number of carburetors
 
 A quick look at each variables
 
-```{r sumplot, echo=FALSE, fig.width=12, fig.height=8}
+```{r sumplot, echo=FALSE, fig.dim = c(12, 8) }
 #ggpairs(mtcars)
 ```
 
@@ -58,7 +60,7 @@ We will test the correlation betwen MPG and AM with alternative hypothesis "true
 ```{r cortest}
 cor.test(mpg, am, alternative = "greater")
 ```
-From the output, p-value is significiantly away from 95% confidence interval, this is a good evidence *supporting* MPG and AM are correlated.
+From the output, p-value is far away from 95% confidence interval, this is a good evidence *supporting* MPG and AM are correlated.
 
 ## One way ANOVA test
 To further prove the opposite is false, we can use one-way ANOVA. The null hypothesis of ANOVA is designed as the mean MPG are the same between auto and manual transmission cars, ie. either those two samples are from either from same population(or different populations with same mean), or when two sample show difference, it is due to chance.
@@ -94,19 +96,68 @@ We can categorize those ten variables into following group
 
 we can chose ourselvies and compare the results but better option is to get help from package "leaps".
 
-```{r subset, echo = F, fig.width = 8, fig.height= 4}
+```{r subset, echo = F, fig.dim = c(8,4) }
 regfit.full <- regsubsets(mpg ~ ., data = mtcars, nbest = 1)
 par(mfrow=c(1,2))
 plot(regfit.full, scale = "adjr2", main="Adj R sqr")
 plot(regfit.full, scale = "Cp", main="mallow's Cp")
 ```
 Here we did a exhausded subset comparsion, with one best result from each number of variable combination. from the right plot, we can see the adjusted R squre does not show big difference after 0.7, the mallow's Cp however have one very low value compares to other combinations. Therefore, we will create regression model with independent variables of weight, quarter mile time, and auto/manual transmission.
-```{r multireg, echo=F, fig.width= 6, fig.height=6}
+```{r multireg, echo=F, fig.dim = c(6,6) }
 mod.mul <- lm(mpg ~ wt + qsec + am, data = mtcars)
 summary(mod.mul)
-library(plot3D)
-amf <- factor(am, levels = c(1,0), labels = c('manual','auto'))
-scatter3D(wt,qsec,mpg, col = amf, colkey=F)
+```
+Interpretation of the output:
+This model tells us on every tone increase, the veichile fuel economy will reduce by 3.9165 mpg if other two variables remain unchanged. This is expceted as the heavier the car, the wrose the fuel economy. 
+
+ The next line quater mile seconds read as every second increase for a car from stand to reach quater mile, the fule economy will increase 1.2259 mpg, if other variable remain unchanged. The explaination is the lower "qsec" the fast car can travel, normally this is result of more powerful engine, which yeild worse mpg number.
+
+Next line of am is the *answer* to second question, if other variables are unchanged, we only change transmission from auto to manual, it will improve car fuel economy by 2.9358 mpg. 
+
+Now we exame the significiant level of each of those variables. Both weight and quater mile seconds are highly significait to fuel economy, with very small p-value. However the "am" is just below 95% critical value, this tells us transmission type is related to MPG but not as sigificiant as other two variables.
+
+```{r residualcomp, echo = F, fig.dim = c(8, 4) }
+se <- function(x) sqrt(var(x)/length(x))
+par(mfrow=c(1,2))
+res.range <- ceiling(max(sapply(list(mod.sim$residuals, mod.mul$residuals), range)))
+plot(mod.sim$residuals, ylim = res.range * c(1,-1))
+plot(mod.mul$residuals, ylim = res.range * c(1,-1))
+par(mfrow=c(1,1))
 ```
 
-# Executive Summary
+```{r regmulplot, echo = F, fig.dim = c(8, 4) }
+# init grid size
+grid.lines = 20
+#  fill points in between min and max value of indenpent variables
+x.pred <- seq(min(wt),max(wt), length.out = grid.lines)
+y.pred <- seq(min(qsec),max(qsec), length.out = grid.lines)
+# resize grid
+xy <- expand.grid( x = x.pred, y = y.pred)
+# fillin z value on, auto and manual will be different grid surface
+z.auto.pred <- matrix(
+  predict(mod.mul, newdata = data.frame( wt = xy$x, qsec = xy$y, am=1)), 
+  nrow =grid.lines, ncol = grid.lines
+  )
+z.manual.pred <- matrix(
+  predict(mod.mul, newdata = data.frame( wt = xy$x, qsec = xy$y, am=0)), 
+  nrow =grid.lines, ncol = grid.lines
+  )
+# plot auto and manual individually, later plot will overlapping first
+points.auto <- mtcars[mtcars$am == 0,]
+points.manual <- mtcars[mtcars$am == 1,]
+
+scatter3D(points.auto$wt, points.auto$qsec, points.auto$mpg, 
+          zlim = c(0,40), col = "blue",
+          colkey=F, pch=20, cex=2, alpha = 0.5,
+          phi = -5, theta = 10, bty = "g", 
+          xlab ="wt", ylab="qsec",zlab="mpg",
+          surf = list(x = x.pred, y = y.pred, z=z.auto.pred, facets = NA , col = "blue"),
+          main = "MPG with auto(blue) and manual(red)"
+)
+scatter3D(points.manual$wt, points.manual$qsec, points.manual$mpg, 
+          col = "red", alpha = 0.5,
+          pch=20, ticktpe = "detailed", cex=2 , 
+          surf = list(x = x.pred, y = y.pred, z=z.manual.pred, facets = NA , col = "red"),
+          add = T
+)
+```
