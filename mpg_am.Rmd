@@ -47,6 +47,7 @@ mpg_am_t<-cor.test(mpg, am, alternative = "greater")
 mpg_am_t
 ```
 From the output, p-value is far away from critcal value of 95% confidence interval, this is a good evidence *supporting* Ha, which is MPG and AM are correlated. 
+
 #### One way ANOVA 
 To further prove the opposite is false, we can use one-way ANOVA. The null hypothesis of the analysis is __the mean MPG are the same between samples__.
 ```{r anova}
@@ -55,6 +56,7 @@ summary(anova1)
 f_crit <- round(qf(.95, 1, 30),2)
 ```
 F value of 16.86 is significiantly larger than the 95% confidence interval critical value `r f_crit`, the result shows strong evident *rejecting* null hypophsis.
+
 #### simple regression
 To quatify the difference between transmission types, we can use linear regression, with MPG as outcome. For the sake of comparsion, let's do a single variable(factor actually) linear model.
 ```{r reg.sim}
@@ -88,16 +90,21 @@ Now we exame the significiant level of each of those variables. Both weight and 
 Fianlly we want to check the residual plot and distribution, to verify if: *1, distribution is fairly normal,  2, if multi-variable regression residual has smaller variation.* From the figure 4, we can see the residual in multi-variable model is closer, and both residual are close to normal.
 
 ### Appendix
+
 #### Table 1, data columns decription and categories
+
 ```{r table1}
 kable(mtcars.tab)
 ```
+
 #### Figure 1, variable correlation grid
+
 ```{r sumplot, echo=FALSE, fig.dim = c(10, 6), fig.cap="", cache=T }
 ggpairs(mtcars)
 ```
 
 #### Figure 2, regression subset selection
+
 ```{r subset, fig.dim = c(6,4), echo =F }
 regfit.full <- regsubsets(mpg ~ ., data = mtcars, nbest = 1)
 par(mfrow=c(1,2))
@@ -107,9 +114,24 @@ plot(regfit.full, scale = "Cp", main="mallow's Cp")
 par(mfrow=c(1,1))
 ```
 
-#### Figure 3, Multi-variable regression model
+#### Figure 3, regression residuals
 
-```{r regmulplot, fig.dim = c(5, 4), fig.cap="", echo=F}
+```{r residualcomp, fig.dim = c(5, 4), fig.cap="" , echo = F}
+se <- function(x) sqrt(var(x)/length(x))
+par(mfrow=c(2,2))
+res.range <- ceiling(max(sapply(list(mod.sim$residuals, mod.mul$residuals), range)))
+plot(mod.sim$residuals, ylim = res.range * c(1,-1), main="simple", ylab = "variation")
+abline(h=0)
+plot(mod.mul$residuals, ylim = res.range * c(1,-1), main="multi", ylab = "variation")
+abline(h=0)
+hist(mod.sim$residuals, breaks = 30, main="simple", xlab = "variation")
+hist(mod.mul$residuals, breaks = 30, main="multi", xlab = "variation")
+par(mfrow=c(1,1))
+```
+
+#### Figure 4, Multi-variable regression model
+
+```{r regmulplot, fig.dim = c(6, 6), fig.cap="", echo=F}
 # init grid size
 grid.lines = 20
 #  fill points in between min and max value of indenpent variables
@@ -145,19 +167,3 @@ scatter3D(points.manual$wt, points.manual$qsec, points.manual$mpg,
           surf = list(x = x.pred, y = y.pred, z=z.manual.pred, facets = NA , col = "red"),
           add = T
 )
-```
-
-#### Figure 4, regression residuals
-
-```{r residualcomp, fig.dim = c(5, 4), fig.cap="" , echo = F}
-se <- function(x) sqrt(var(x)/length(x))
-par(mfrow=c(2,2))
-res.range <- ceiling(max(sapply(list(mod.sim$residuals, mod.mul$residuals), range)))
-plot(mod.sim$residuals, ylim = res.range * c(1,-1), main="simple", ylab = "variation")
-abline(h=0)
-plot(mod.mul$residuals, ylim = res.range * c(1,-1), main="multi", ylab = "variation")
-abline(h=0)
-hist(mod.sim$residuals, breaks = 30, main="simple", xlab = "variation")
-hist(mod.mul$residuals, breaks = 30, main="multi", xlab = "variation")
-par(mfrow=c(1,1))
-```
